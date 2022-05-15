@@ -33,19 +33,19 @@ class Model(tf.Module):
         self.model.fit((X_train), y_train, epochs=20,
                        validation_data=((X_valid), y_valid))
 
-    @tf.function(input_signature=[
+    '''@tf.function(input_signature=[
         tf.TensorSpec([None, 8], tf.float32),
         tf.TensorSpec([None, ], tf.float32),
     ])
     def train(self, x, y):
         with tf.GradientTape() as tape:
             prediction = self.model(x)
-            loss = self.model.loss(y, prediction)
-        gradients = tape.gradient(loss, self.model.trainable_variables)
+            lossy = self.model.loss(y, prediction)
+        gradients = tape.gradient(lossy, self.model.trainable_variables)
         self.model.optimizer.apply_gradients(
             zip(gradients, self.model.trainable_variables))
-        result = {"loss": loss}
-        return result
+        result = {"loss": lossy}
+        return result'''
 
     @tf.function(input_signature=[
         tf.TensorSpec([None, 8], tf.float32),
@@ -89,7 +89,7 @@ m = Model()
 train_ds = tf.data.Dataset.from_tensor_slices((X_train, y_train))
 train_ds = train_ds.batch(BATCH_SIZE)
 
-#for x, y in train_ds:
-result = m.train(x, y)
+for x, y in train_ds:
+    result = m.train(x, y)
 
 #%%
