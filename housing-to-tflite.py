@@ -30,22 +30,24 @@ class Model(tf.Module):
         self.model = keras.models.Model(inputs=[input], outputs=[output])
 
         self.model.compile(loss="mse", optimizer="sgd")
-        self.model.fit((X_train), y_train, epochs=20,
-                       validation_data=((X_valid), y_valid))
+        '''self.model.fit(X_train, y_train, epochs=100,
+                       validation_data=(X_valid, y_valid))'''
 
-    '''@tf.function(input_signature=[
-        tf.TensorSpec([None, 8], tf.float32),
-        tf.TensorSpec([None, ], tf.float32),
+    @tf.function(input_signature=[
+        tf.TensorSpec(shape=(X_train.shape[1:]), dtype=tf.float32),
+        tf.TensorSpec(shape=(y_train.shape[1:]), dtype=tf.float32),
     ])
     def train(self, x, y):
+        loss_fn = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
         with tf.GradientTape() as tape:
             prediction = self.model(x)
-            lossy = self.model.loss(y, prediction)
+            #lossy = self.model. (y, prediction)
+            lossy = loss_fn(y, prediction)
         gradients = tape.gradient(lossy, self.model.trainable_variables)
         self.model.optimizer.apply_gradients(
             zip(gradients, self.model.trainable_variables))
         result = {"loss": lossy}
-        return result'''
+        return result
 
     @tf.function(input_signature=[
         tf.TensorSpec([None, 8], tf.float32),
@@ -85,11 +87,14 @@ BATCH_SIZE = 100
 # epochs = np.arange(1, NUM_EPOCHS + 1, 1)
 # losses = np.zeros([NUM_EPOCHS])
 m = Model()
-
+train_labels = tf.keras.utils.to_categorical(y_train)
+test_labels = tf.keras.utils.to_categorical(y_test)
 train_ds = tf.data.Dataset.from_tensor_slices((X_train, y_train))
 train_ds = train_ds.batch(BATCH_SIZE)
 
 for x, y in train_ds:
     result = m.train(x, y)
+
+#%%
 
 #%%
