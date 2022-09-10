@@ -52,6 +52,13 @@ class Model(tf.Module):
     @tf.function(input_signature=[
         tf.TensorSpec([None, 8], tf.float32),
     ])
+    def predictee(self, x):
+        predictions = self.model(x)
+        return predictions
+
+    @tf.function(input_signature=[
+        tf.TensorSpec([None, 8], tf.float32),
+    ])
     def infer(self, x):
         logits = self.model(x)
         probabilities = tf.nn.softmax(logits, axis=-1)
@@ -104,8 +111,8 @@ tf.saved_model.save(
     m,
     SAVED_MODEL_DIR,
     signatures={
-        'infer':
-            m.infer.get_concrete_function(),
+        'predictee':
+            m.predictee.get_concrete_function(),
         'save':
             m.save.get_concrete_function(),
         'restore':
