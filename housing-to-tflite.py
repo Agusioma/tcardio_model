@@ -54,7 +54,9 @@ class Model(tf.Module):
     ])
     def predictee(self, x):
         predictions = self.model(x)
-        return predictions
+        return {
+            "rent" : predictions
+        }
 
     @tf.function(input_signature=[
         tf.TensorSpec([None, 8], tf.float32),
