@@ -5,38 +5,42 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from tensorflow import keras
 import tensorflow as tf
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
-housing = fetch_california_housing()
+file_path = 'datasets/heart.csv'
+heart_data = pd.read_csv(file_path)
 
-X_train_full, X_test, y_train_full, y_test = train_test_split(housing.data, housing.target, random_state=42)
+imputer = SimpleImputer(strategy="median")
+proc_pipeline = Pipeline([
+    ('imputer', SimpleImputer(strategy="median")),
+    ('std_scaler', StandardScaler()),
+])
+
+heart_data_proc = proc_pipeline.fit_transform(heart_data)
+heart_data_t = heart_data.drop("output", axis=1)
+heart_data_z = imputer.fit_transform(heart_data_t)
+
+train_set, test_set = train_test_split(heart_data, test_size=0.2, random_state=42)
+X_train_full, X_test, y_train_full, y_test = train_test_split(heart_data_z, heart_data.output, random_state=42)
 X_train, X_valid, y_train, y_valid = train_test_split(X_train_full, y_train_full, random_state=42)
-
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_valid = scaler.transform(X_valid)
-X_test = scaler.transform(X_test)
-
-'''X_train_A, X_train_B = X_train[:, :5], X_train[:, 2:]
-X_valid_A, X_valid_B = X_valid[:, :5], X_valid[:, 2:]
-X_test_A, X_test_B = X_test[:, :5], X_test[:, 2:]
-X_new_A, X_new_B = X_test_A[:3], X_test_B[:3]'''
-
 
 class Model(tf.Module):
     def __init__(self):
-        input = keras.layers.Input(shape=X_train.shape[1:])
-        hidden1 = keras.layers.Dense(30, activation="relu")(input)
-        hidden2 = keras.layers.Dense(30, activation="relu")(hidden1)
-        concat = keras.layers.concatenate([input, hidden2])
-        output = keras.layers.Dense(1)(concat)
+        input = tf.keras.layers.Input(shape=X_train.shape[1:])
+        hidden1 = tf.keras.layers.Dense(50, activation="sigmoid")(input)
+        hidden2 = tf.keras.layers.Dense(50, activation="sigmoid")(hidden1)
+        #concat = keras.layers.concatenate([input, hidden2])
+        output = tf.keras.layers.Dense(1)(hidden2)
         self.model = keras.models.Model(inputs=[input], outputs=[output])
-
-        self.model.compile(loss="mse", optimizer="sgd")
+        opt = tf.keras.optimizers.SGD(learning_rate=0.01)
+        self.model.compile(loss="mse", optimizer=opt, metrics=['accuracy'])
         self.model.fit(X_train, y_train, epochs=20,
                        validation_data=(X_valid, y_valid))
 
     @tf.function(input_signature=[
-        tf.TensorSpec([None, 8], tf.float32),
+        tf.TensorSpec([None, 13], tf.float32),
         tf.TensorSpec([None, ], tf.float32),
     ])
     def train(self, x, y):
@@ -50,16 +54,22 @@ class Model(tf.Module):
         return result'''
 
     @tf.function(input_signature=[
-        tf.TensorSpec([None, 8], tf.float32),
+        tf.TensorSpec(shape=[None,13], dtype=tf.float64)
+    ])
+    def pred(self,x):
+        return self.model(X_test[0])
+
+    @tf.function(input_signature=[
+        tf.TensorSpec([None, 13], tf.float32),
     ])
     def predictee(self, x):
         predictions = self.model(x)
         return {
-            "rent" : predictions
+            "rent": predictions
         }
 
     @tf.function(input_signature=[
-        tf.TensorSpec([None, 8], tf.float32),
+        tf.TensorSpec([None, 13], tf.float32),
     ])
     def infer(self, x):
         logits = self.model(x)
@@ -96,11 +106,11 @@ BATCH_SIZE = 100
 # epochs = np.arange(1, NUM_EPOCHS + 1, 1)
 # losses = np.zeros([NUM_EPOCHS])
 m = Model()
-train_labels = tf.keras.utils.to_categorical(y_train)
+'''train_labels = tf.keras.utils.to_categorical(y_train)
 test_labels = tf.keras.utils.to_categorical(y_test)
 train_ds = tf.data.Dataset.from_tensor_slices((X_train, y_train))
 train_ds = train_ds.batch(BATCH_SIZE)
-
+'''
 '''for x, y in train_ds:
     result = m.train(x, y)'''
 m
@@ -121,7 +131,7 @@ tf.saved_model.save(
             m.restore.get_concrete_function(),
     })
 #%%
-'''converter = tf.lite.TFLiteConverter.from_saved_model(SAVED_MODEL_DIR)
+converter = tf.lite.TFLiteConverter.from_saved_model(SAVED_MODEL_DIR)
 converter.target_spec.supported_ops = [
     tf.lite.OpsSet.TFLITE_BUILTINS,  # enable TensorFlow Lite ops.
     tf.lite.OpsSet.SELECT_TF_OPS  # enable TensorFlow ops.
@@ -131,4 +141,4 @@ tflite_model = converter.convert()
 
 model_file_path = os.path.join('housing_model.tflite')
 with open(model_file_path, 'wb') as model_file:
-    model_file.write(tflite_model)'''
+    model_file.write(tflite_model)
