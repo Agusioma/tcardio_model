@@ -121,7 +121,7 @@ tf.saved_model.save(
             m.restore.get_concrete_function(),
     })
 #%%
-converter = tf.lite.TFLiteConverter.from_saved_model(SAVED_MODEL_DIR)
+'''converter = tf.lite.TFLiteConverter.from_saved_model(SAVED_MODEL_DIR)
 converter.target_spec.supported_ops = [
     tf.lite.OpsSet.TFLITE_BUILTINS,  # enable TensorFlow Lite ops.
     tf.lite.OpsSet.SELECT_TF_OPS  # enable TensorFlow ops.
@@ -131,4 +131,4 @@ tflite_model = converter.convert()
 
 model_file_path = os.path.join('housing_model.tflite')
 with open(model_file_path, 'wb') as model_file:
-    model_file.write(tflite_model)
+    model_file.write(tflite_model)'''
