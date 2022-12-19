@@ -8,6 +8,7 @@ import tensorflow as tf
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+import pandas as pd
 
 file_path = 'datasets/heart.csv'
 heart_data = pd.read_csv(file_path)
@@ -28,7 +29,7 @@ X_train, X_valid, y_train, y_valid = train_test_split(X_train_full, y_train_full
 
 class Model(tf.Module):
     def __init__(self):
-        input = tf.keras.layers.Input(shape=X_train.shape[1:])
+        input = tf.keras.layers.Input(shape=X_train.shape[1:], dtype=tf.float32)
         hidden1 = tf.keras.layers.Dense(50, activation="sigmoid")(input)
         hidden2 = tf.keras.layers.Dense(50, activation="sigmoid")(hidden1)
         #concat = keras.layers.concatenate([input, hidden2])
@@ -54,18 +55,12 @@ class Model(tf.Module):
         return result'''
 
     @tf.function(input_signature=[
-        tf.TensorSpec(shape=[None,13], dtype=tf.float64)
-    ])
-    def pred(self,x):
-        return self.model(X_test[0])
-
-    @tf.function(input_signature=[
         tf.TensorSpec([None, 13], tf.float32),
     ])
     def predictee(self, x):
         predictions = self.model(x)
         return {
-            "rent": predictions
+            "rent":predictions
         }
 
     @tf.function(input_signature=[
